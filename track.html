@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PFT | Transaction Tracker</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles_track.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        form h2 {
+            color: #555;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        form input {
+            width: calc(50% - 12px);
+            padding: 8px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            display: inline-block;
+        }
+
+        form button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar" style="margin-left: 0;">
+        <div class="logo">
+            <a href="index.html">
+                <img src="PERSONAL_FINANCE_TRACKER-removebg-preview.png" alt="Logo">
+            </a>
+        </div>
+        <a href="index.html">Home</a>
+        <a href="track.html">Track Now</a>
+        <a href="ABOUT.HTML">About</a>
+        <a href="contactus.html">Contact Us</a>
+    </div>
+    
+<br><br><br><br><br><br>
+<div style="margin: 20px;">
+<div>
+
+<center><h1>Transaction Tracker</h1></center>
+
+<!-- Form to input savings transactions -->
+<form id="savingsForm">
+    <h2>Savings</h2>
+    <label for="savingsDescription">Description:</label>
+    <input type="text" id="savingsDescription" required>
+
+    <label for="savingsAmount">Amount:</label>
+    <input type="number" id="savingsAmount" required>
+
+    <button type="button" onclick="addTransaction('savings')">Add Transaction</button>
+</form>
+
+<!-- Form to input expenditure transactions -->
+<form id="expenditureForm">
+    <h2>Expenditures</h2>
+    <label for="expenditureDescription">Description:</label>
+    <input type="text" id="expenditureDescription" required>
+
+    <label for="expenditureAmount">Amount:</label>
+    <input type="number" id="expenditureAmount" required>
+
+    <button type="button" onclick="addTransaction('expenditure')">Add Transaction</button>
+</form>
+</div>
+<!-- Bar graph to display savings and expenditures -->
+<center><canvas id="doubleBarChart" width="960" height="540" style="display: none;"></canvas></center>
+
+<!-- Dynamic table to display savings -->
+<h3>Savings Table</h3>
+<table id="savingsTable">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Dynamic table to display expenditures -->
+<h3>Expenditure Table</h3>
+<table id="expenditureTable">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<br>
+<!-- Balance Section -->
+<center><div class="balance-section">
+    <h3>Balance Overview</h3>
+    <p id="balanceText">Total Balance: ₹0.00</p>
+</div></center>
+
+
+
+<footer class="footer">
+    <div class="container">
+        <span class="text-muted">© 2023 Personal Finance Tracker. All rights reserved.</span>
+    </div>
+</footer>
+
+<script>
+    // Arrays to store savings and expenditures
+    const savings = [];
+    const expenditures = [];
+
+    // Function to add a new transaction
+    function addTransaction(category) {
+        const description = document.getElementById(`${category}Description`).value;
+        const amount = parseFloat(document.getElementById(`${category}Amount`).value);
+
+        // Validate input
+        if (!description || isNaN(amount)) {
+            alert("Please enter valid data.");
+            return;
+        }
+
+        // Add transaction to the appropriate category
+        if (category === "savings") {
+            savings.push({ description, amount });
+        } else {
+            expenditures.push({ description, amount });
+        }
+
+        // Update the tables and the double bar graph
+        updateTable(`${category}Table`, category === "savings" ? savings : expenditures);
+        updateDoubleBarChart();
+    }
+
+    // Function to update the table
+    function updateTable(tableId, data) {
+        const tableBody = document.getElementById(tableId).querySelector("tbody");
+
+        // Clear existing rows
+        tableBody.innerHTML = "";
+
+        // Add rows for each transaction
+        data.forEach(transaction => {
+            const row = tableBody.insertRow();
+            row.insertCell(0).textContent = transaction.description;
+            row.insertCell(1).textContent = transaction.amount.toFixed(2);
+        });
+    }
+
+// Function to update the double bar graph and balance
+function updateDoubleBarChart() {
+    const totalSavings = savings.reduce((sum, transaction) => sum + transaction.amount, 0);
+    const totalExpenditures = expenditures.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    const totalBalance = totalSavings - totalExpenditures;
+
+    
+    document.getElementById('balanceText').textContent = `Total Balance: ₹${totalBalance.toFixed(2)}`;
+
+    const canvas = document.getElementById('doubleBarChart');
+
+    if (totalSavings > 0 || totalExpenditures > 0) {
+        // If there are transactions, show the canvas
+        canvas.style.display = 'block';
+
+        // Check if the chart already exists
+        if (window.myChart) {
+            // Update existing chart
+            window.myChart.data.labels = ['Savings', 'Expenditures'];
+            window.myChart.data.datasets[0].data = [totalSavings, totalExpenditures];
+            window.myChart.update();
+        } else {
+            // Create new chart
+            const ctx = canvas.getContext("2d");
+window.myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Savings', 'Expenditures'],
+        datasets: [
+            {
+                label: 'Total',
+                data: [totalSavings, totalExpenditures],
+                backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(255, 99, 132, 0.7)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: false, // Set responsive to false
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1000
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Transaction Overview',
+                font: {
+                    size: 12
+                }
+            }
+        }
+    }
+});
+
+        }
+    } else {
+        // If there are no transactions, hide the canvas
+        canvas.style.display = 'none';
+    }
+}
+
+
+
+
+    //submit transactions and display the double bar graph
+    function submitTransactions() {
+        // Update the double bar graph
+        updateDoubleBarChart();
+    }
+</script>
+</div>
+</body>
+</html>
